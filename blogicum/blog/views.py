@@ -1,13 +1,8 @@
-from datetime import datetime
-
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.views.generic import ListView, DetailView
+from django.utils import timezone
 
 from .models import Post, Category  # , Location
-
-posts = [
-    {}, {}, {}
-]
 
 
 class PostListView(ListView):
@@ -15,7 +10,7 @@ class PostListView(ListView):
     queryset = Post.objects.filter(
         is_published=True,
         category__is_published=True,
-        pub_date__lt=datetime.now()
+        pub_date__lt=timezone.now()
     ).select_related('category').select_related('location')
     ordering = 'id'
     template_name = 'blog/index.html'
@@ -31,7 +26,7 @@ class CategoryDetailView(DetailView):
         context['post_list'] = Post.objects.filter(
             category__id=self.object.id,
             is_published=True,
-            pub_date__lt=datetime.now()
+            pub_date__lt=timezone.now()
         )
         return context
 
@@ -53,31 +48,5 @@ class PostDetailView(DetailView):
             pk=self.kwargs['pk'],
             is_published=True,
             category__is_published=True,
-            pub_date__lt=datetime.now()
+            pub_date__lt=timezone.now()
         )
-
-
-# def index(request):
-#     context = {
-#         'posts': reversed(posts)
-#     }
-#     return render(request, "blog/index.html", context)
-
-
-def post_detail(request, post_id: int):
-    context = {
-        'post': post for post in posts if post_id == post['id']
-    }
-    return render(request, "blog/detail.html", context)
-
-
-# def category_posts(request, category_slug):
-#     # context = {
-#     #     'category': [post for post in posts if post['category'] ==
-#     #  category_slug]
-#     # }
-#     context = {
-#         'category_slug': category_slug
-#     }
-#     return render(request, "blog/category.html", context)
-# Create your views here.

@@ -49,6 +49,7 @@ class Post(BaseModel):
     class Meta:
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
+        ordering = ('id', )
 
     def __str__(self):
         return self.title
