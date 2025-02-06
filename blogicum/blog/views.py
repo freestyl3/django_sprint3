@@ -1,54 +1,67 @@
-from django.shortcuts import render
+from datetime import datetime
+
+from django.shortcuts import render, get_object_or_404
+from django.views.generic import ListView, DetailView
+
+from .models import Post, Category  # , Location
 
 posts = [
-    {
-        'id': 0,
-        'location': 'Остров отчаянья',
-        'date': '30 сентября 1659 года',
-        'category': 'travel',
-        'text': '''Наш корабль, застигнутый в открытом море
-                страшным штормом, потерпел крушение.
-                Весь экипаж, кроме меня, утонул; я же,
-                несчастный Робинзон Крузо, был выброшен
-                полумёртвым на берег этого проклятого острова,
-                который назвал островом Отчаяния.''',
-    },
-    {
-        'id': 1,
-        'location': 'Остров отчаянья',
-        'date': '1 октября 1659 года',
-        'category': 'not-my-day',
-        'text': '''Проснувшись поутру, я увидел, что наш корабль сняло
-                с мели приливом и пригнало гораздо ближе к берегу.
-                Это подало мне надежду, что, когда ветер стихнет,
-                мне удастся добраться до корабля и запастись едой и
-                другими необходимыми вещами. Я немного приободрился,
-                хотя печаль о погибших товарищах не покидала меня.
-                Мне всё думалось, что, останься мы на корабле, мы
-                непременно спаслись бы. Теперь из его обломков мы могли бы
-                построить баркас, на котором и выбрались бы из этого
-                гиблого места.''',
-    },
-    {
-        'id': 2,
-        'location': 'Остров отчаянья',
-        'date': '25 октября 1659 года',
-        'category': 'not-my-day',
-        'text': '''Всю ночь и весь день шёл дождь и дул сильный
-                порывистый ветер. 25 октября.  Корабль за ночь разбило
-                в щепки; на том месте, где он стоял, торчат какие-то
-                жалкие обломки,  да и те видны только во время отлива.
-                Весь этот день я хлопотал  около вещей: укрывал и
-                укутывал их, чтобы не испортились от дождя.''',
-    },
+    {}, {}, {}
 ]
 
 
-def index(request):
-    context = {
-        'posts': reversed(posts)
-    }
-    return render(request, "blog/index.html", context)
+class PostListView(ListView):
+    model = Post
+    queryset = Post.objects.filter(
+        is_published=True,
+        category__is_published=True,
+        pub_date__lt=datetime.now()
+    ).select_related('category').select_related('location')
+    ordering = 'id'
+    template_name = 'blog/index.html'
+    paginate_by = 5
+
+
+class CategoryDetailView(DetailView):
+    model = Category
+    template_name = 'blog/category.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['post_list'] = Post.objects.filter(
+            category__id=self.object.id,
+            is_published=True,
+            pub_date__lt=datetime.now()
+        )
+        return context
+
+    def get_object(self):
+        return get_object_or_404(
+            Category,
+            slug=self.kwargs['slug'],
+            is_published=True
+        )
+
+
+class PostDetailView(DetailView):
+    model = Post
+    template_name = 'blog/detail.html'
+
+    def get_object(self):
+        return get_object_or_404(
+            Post,
+            pk=self.kwargs['pk'],
+            is_published=True,
+            category__is_published=True,
+            pub_date__lt=datetime.now()
+        )
+
+
+# def index(request):
+#     context = {
+#         'posts': reversed(posts)
+#     }
+#     return render(request, "blog/index.html", context)
 
 
 def post_detail(request, post_id: int):
@@ -58,13 +71,13 @@ def post_detail(request, post_id: int):
     return render(request, "blog/detail.html", context)
 
 
-def category_posts(request, category_slug):
-    # context = {
-    #     'category': [post for post in posts if post['category'] ==
-    #  category_slug]
-    # }
-    context = {
-        'category_slug': category_slug
-    }
-    return render(request, "blog/category.html", context)
+# def category_posts(request, category_slug):
+#     # context = {
+#     #     'category': [post for post in posts if post['category'] ==
+#     #  category_slug]
+#     # }
+#     context = {
+#         'category_slug': category_slug
+#     }
+#     return render(request, "blog/category.html", context)
 # Create your views here.
